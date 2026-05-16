@@ -151,13 +151,13 @@ with right_input:
 # =========================================================
 runs_left = target - current_score
 
-# Balls left
+# Balls Left
 balls_left = (
     int(overs_left) * 6
     + int((overs_left - int(overs_left)) * 10)
 )
 
-# Overs completed
+# Overs Completed
 overs_completed = 20 - overs_left
 
 # Current Run Rate
@@ -256,68 +256,67 @@ if st.button("🏏 Predict Winner"):
             2
         )
 
-       # =================================================
-# REALISTIC LAST OVER FIXES
-# =================================================
+        # =================================================
+        # REALISTIC LAST OVER FIXES
+        # =================================================
 
-# 1 run from 1+ ball
-if runs_left == 1 and balls_left >= 1:
+        # 1 run from 1+ ball
+        if runs_left == 1 and balls_left >= 1:
 
-    batting_win = 97
-    bowling_win = 3
+            batting_win = 97
+            bowling_win = 3
 
-# 2 runs from 1 ball
-elif runs_left == 2 and balls_left == 1:
+        # 2 runs from 1 ball
+        elif runs_left == 2 and balls_left == 1:
 
-    if wickets_left >= 3:
-        batting_win = 65
-    elif wickets_left == 2:
-        batting_win = 55
-    else:
-        batting_win = 42
+            if wickets_left >= 3:
+                batting_win = 65
 
-    bowling_win = 100 - batting_win
+            elif wickets_left == 2:
+                batting_win = 55
 
-# Boundary needed from 1 ball
-elif runs_left >= 4 and balls_left == 1:
+            else:
+                batting_win = 42
 
-    if wickets_left >= 5:
-        batting_win = 30
-    else:
-        batting_win = 15
+            bowling_win = 100 - batting_win
 
-    bowling_win = 100 - batting_win
+        # Boundary needed from 1 ball
+        elif runs_left >= 4 and balls_left == 1:
 
-# Easy chase
-elif runs_left <= balls_left:
+            if wickets_left >= 5:
+                batting_win = 30
 
-    batting_win = max(
-        batting_win,
-        80
-    )
+            else:
+                batting_win = 15
 
-    bowling_win = 100 - batting_win
+            bowling_win = 100 - batting_win
 
-# Tough chase
-elif runs_left > balls_left * 2:
+        # Easy chase
+        elif runs_left <= balls_left:
 
-    bowling_win = max(
-        bowling_win,
-        80
-    )
+            batting_win = max(
+                batting_win,
+                80
+            )
 
-    batting_win = 100 - bowling_win
+            bowling_win = 100 - batting_win
 
-# Almost impossible
-if wickets_left <= 1 and runs_left > 12:
+        # Tough chase
+        elif runs_left > balls_left * 2:
 
-    bowling_win = 95
-    batting_win = 5
+            bowling_win = max(
+                bowling_win,
+                80
+            )
 
-       
-           
+            batting_win = 100 - bowling_win
 
-        
+        # Almost impossible chase
+        if wickets_left <= 1 and runs_left > 12:
+
+            bowling_win = 95
+            batting_win = 5
+
         # =================================================
         # OUTPUT LAYOUT
         # =================================================
