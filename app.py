@@ -309,7 +309,7 @@ if st.button("🏏 Predict Winner"):
         # =================================================
         with right_output:
 
-            st.markdown("## 🪱 IPL Worm Graph")
+            st.markdown("## Comparison Graph")
 
             # ---------------- Overs ----------------
             overs = list(range(1, 21))
