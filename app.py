@@ -155,13 +155,13 @@ with right_input:
 # =========================================================
 runs_left = target - current_score
 
-# Balls left
+# Balls Left
 balls_left = (
     int(overs_left) * 6
     + int((overs_left - int(overs_left)) * 10)
 )
 
-# Overs completed
+# Overs Completed
 overs_completed = 20 - overs_left
 
 # Current Run Rate
@@ -181,12 +181,8 @@ else:
 # =========================================================
 st.markdown("---")
 
-if runs_left <= 0:
-    st.success(f"🏆 {batting_team} already won the match!")
-    st.stop()
-
-if balls_left <= 0 and runs_left > 0:
-    st.error("❌ Match Over")
+if batting_team == bowling_team:
+    st.error("❌ Batting and Bowling teams cannot be same")
     st.stop()
 
 # =========================================================
@@ -195,7 +191,7 @@ if balls_left <= 0 and runs_left > 0:
 m1, m2, m3, m4 = st.columns(4)
 
 with m1:
-    st.metric("Runs Left", runs_left)
+    st.metric("Runs Left", max(runs_left, 0))
 
 with m2:
     st.metric("Balls Left", balls_left)
@@ -204,17 +200,59 @@ with m3:
     st.metric("Wickets Left", wickets_left)
 
 with m4:
-    st.metric("Required RR", rrr)
+    st.metric("Required RR", max(rrr, 0))
 
 st.markdown("---")
 
 # =========================================================
-# PREDICTION
+# PREDICT BUTTON
 # =========================================================
 if st.button("🏏 Predict Winner"):
 
     # =====================================================
-    # MODEL INPUT
+    # MATCH RESULT CONDITIONS
+    # =====================================================
+
+    # Batting Team Won
+    if current_score >= target:
+
+        st.success(
+            f"🏆 {batting_team} WON THE MATCH!"
+        )
+
+        st.balloons()
+
+        st.info(
+            f"{batting_team} successfully chased "
+            f"{target}."
+        )
+
+        st.stop()
+
+    # Batting Team All Out
+    if wickets_left == 0 and current_score < target:
+
+        st.error(
+            f"❌ {batting_team} ALL OUT!"
+        )
+
+        st.success(
+            f"🏆 {bowling_team} WON THE MATCH!"
+        )
+
+        st.stop()
+
+    # Overs Finished
+    if balls_left <= 0 and current_score < target:
+
+        st.success(
+            f"🏆 {bowling_team} WON THE MATCH!"
+        )
+
+        st.stop()
+
+    # =====================================================
+    # INPUT DATAFRAME
     # =====================================================
     input_df = pd.DataFrame(
         [[
@@ -246,7 +284,7 @@ if st.button("🏏 Predict Winner"):
     try:
 
         # =================================================
-        # MODEL PROBABILITY
+        # MODEL PREDICTION
         # =================================================
         probability = model.predict_proba(input_df)
 
@@ -257,24 +295,17 @@ if st.button("🏏 Predict Winner"):
         # REALISTIC CRICKET ENGINE
         # =================================================
 
-        # Pressure factor
         pressure = rrr - crr
 
-        # =================================================
-        # EASY CHASE
-        # =================================================
+        # Easy Chase
         if runs_left <= balls_left:
             batting_win += 20
 
-        # =================================================
-        # 1 RUN FROM LAST BALL
-        # =================================================
+        # 1 Run Needed
         if runs_left == 1 and balls_left >= 1:
             batting_win = 98
 
-        # =================================================
-        # 2 RUNS FROM 1 BALL
-        # =================================================
+        # 2 Runs from 1 Ball
         elif runs_left == 2 and balls_left == 1:
 
             if wickets_left >= 5:
@@ -286,9 +317,7 @@ if st.button("🏏 Predict Winner"):
             else:
                 batting_win = 40
 
-        # =================================================
-        # BOUNDARY NEEDED FROM LAST BALL
-        # =================================================
+        # Boundary Needed
         elif runs_left >= 4 and balls_left == 1:
 
             if wickets_left >= 5:
@@ -300,36 +329,25 @@ if st.button("🏏 Predict Winner"):
             else:
                 batting_win = 8
 
-        # =================================================
-        # LAST OVER CHASE
-        # =================================================
+        # Last Over
         elif balls_left <= 6:
 
             batting_win += wickets_left * 2
-
             batting_win -= pressure * 2
 
-        # =================================================
-        # MIDDLE OVERS
-        # =================================================
+        # Middle Overs
         elif balls_left <= 36:
 
             batting_win += wickets_left * 1.5
-
             batting_win -= pressure * 1.2
 
-        # =================================================
-        # EARLY OVERS
-        # =================================================
+        # Early Overs
         else:
 
             batting_win += wickets_left
-
             batting_win -= pressure
 
-        # =================================================
-        # HIGH REQUIRED RR PENALTY
-        # =================================================
+        # High RR Penalty
         if rrr >= 15:
             batting_win -= 15
 
@@ -339,18 +357,14 @@ if st.button("🏏 Predict Winner"):
         elif rrr >= 10:
             batting_win -= 5
 
-        # =================================================
-        # LOW WICKETS PENALTY
-        # =================================================
+        # Low Wickets Penalty
         if wickets_left == 1:
             batting_win -= 12
 
         elif wickets_left == 2:
             batting_win -= 7
 
-        # =================================================
-        # LIMIT VALUES
-        # =================================================
+        # Clamp Values
         batting_win = max(
             1,
             min(99, batting_win)
@@ -417,7 +431,7 @@ if st.button("🏏 Predict Winner"):
         # =================================================
         with right_output:
 
-            st.markdown("## Comparison Graph")
+            st.markdown("## 🪱 IPL Run Rate Worm Graph")
 
             overs = list(range(1, 21))
 
@@ -494,7 +508,7 @@ if st.button("🏏 Predict Winner"):
 
                 template="plotly_dark",
 
-                title="🏏Run Rate Worm Graph",
+                title="🏏 IPL Run Rate Worm Graph",
 
                 xaxis_title="Overs",
 
