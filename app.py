@@ -134,7 +134,7 @@ with right_input:
     )
 
     # =====================================================
-    # FIXED CRICKET OVER SELECTOR
+    # VALID CRICKET OVERS
     # =====================================================
     overs_left = st.selectbox(
         "Overs Left",
@@ -151,13 +151,13 @@ with right_input:
 # =========================================================
 runs_left = target - current_score
 
-# Balls Left
+# Balls left
 balls_left = (
     int(overs_left) * 6
     + int((overs_left - int(overs_left)) * 10)
 )
 
-# Overs Completed
+# Overs completed
 overs_completed = 20 - overs_left
 
 # Current Run Rate
@@ -177,11 +177,11 @@ else:
 # =========================================================
 st.markdown("---")
 
-if runs_left < 0:
+if runs_left <= 0:
     st.success(f"🏆 {batting_team} already won the match!")
     st.stop()
 
-if overs_left <= 0 and runs_left > 0:
+if balls_left <= 0 and runs_left > 0:
     st.error("❌ Match Over")
     st.stop()
 
@@ -205,44 +205,44 @@ with metric4:
 st.markdown("---")
 
 # =========================================================
-# PREDICTION BUTTON
+# PREDICT BUTTON
 # =========================================================
 if st.button("🏏 Predict Winner"):
 
     # =====================================================
-    # MODEL INPUT DATAFRAME
+    # INPUT DATAFRAME
     # =====================================================
     input_df = pd.DataFrame(
-    [[
-        batting_team,
-        bowling_team,
-        target,
-        current_score,
-        runs_left,
-        wickets_left,
-        overs_left,
-        balls_left,
-        crr,
-        rrr
-    ]],
-    columns=[
-        "batting_team",
-        "bowling_team",
-        "target",
-        "current_score",
-        "runs_left",
-        "wickets_left",
-        "overs_left",
-        "balls_left",
-        "crr",
-        "rrr"
-    ]
-)
+        [[
+            batting_team,
+            bowling_team,
+            target,
+            current_score,
+            runs_left,
+            wickets_left,
+            overs_left,
+            balls_left,
+            crr,
+            rrr
+        ]],
+        columns=[
+            "batting_team",
+            "bowling_team",
+            "target",
+            "current_score",
+            "runs_left",
+            "wickets_left",
+            "overs_left",
+            "balls_left",
+            "crr",
+            "rrr"
+        ]
+    )
 
     try:
 
         # =================================================
-        # PREDICT PROBABILITY
+        # MODEL PREDICTION
         # =================================================
         probability = model.predict_proba(input_df)
 
@@ -257,15 +257,50 @@ if st.button("🏏 Predict Winner"):
         )
 
         # =================================================
-        # EXTREME MATCH FIXES
+        # LAST OVER REALISTIC FIXES
         # =================================================
-        if runs_left <= 6 and balls_left >= runs_left:
-            batting_win = min(99, batting_win + 35)
+
+        # Easy chase situations
+        if runs_left <= balls_left:
+
+            batting_win = max(
+                batting_win,
+                85
+            )
+
             bowling_win = 100 - batting_win
 
-        if wickets_left <= 1 and runs_left > 20:
-            bowling_win = min(99, bowling_win + 25)
+        # Very easy finish
+        if runs_left == 1 and balls_left >= 1:
+
+            batting_win = 97
+            bowling_win = 3
+
+        # Need boundary
+        elif runs_left <= 6 and balls_left >= 2:
+
+            batting_win = max(
+                batting_win,
+                75
+            )
+
+            bowling_win = 100 - batting_win
+
+        # Tough chase
+        elif runs_left > balls_left * 2:
+
+            bowling_win = max(
+                bowling_win,
+                80
+            )
+
             batting_win = 100 - bowling_win
+
+        # Almost impossible chase
+        if wickets_left <= 1 and runs_left > 12:
+
+            bowling_win = 95
+            batting_win = 5
 
         # =================================================
         # OUTPUT LAYOUT
@@ -273,13 +308,12 @@ if st.button("🏏 Predict Winner"):
         left_output, right_output = st.columns([1, 1.7])
 
         # =================================================
-        # LEFT SIDE RESULTS
+        # LEFT SIDE RESULT
         # =================================================
         with left_output:
 
             st.markdown("## 🏆 Prediction Result")
 
-            # Winner Highlight
             if batting_win > bowling_win:
 
                 st.success(
@@ -315,20 +349,9 @@ if st.button("🏏 Predict Winner"):
 
             st.markdown("### 📊 Match Stats")
 
-            st.metric(
-                "Current RR",
-                crr
-            )
-
-            st.metric(
-                "Required RR",
-                rrr
-            )
-
-            st.metric(
-                "Balls Left",
-                balls_left
-            )
+            st.metric("Current RR", crr)
+            st.metric("Required RR", rrr)
+            st.metric("Balls Left", balls_left)
 
         # =================================================
         # RIGHT SIDE WORM GRAPH
@@ -339,9 +362,6 @@ if st.button("🏏 Predict Winner"):
 
             overs = list(range(1, 21))
 
-            # =================================================
-            # REALISTIC RUN RATE CURVES
-            # =================================================
             batting_rr = []
             bowling_rr = []
 
@@ -350,7 +370,7 @@ if st.button("🏏 Predict Winner"):
 
             for i in range(20):
 
-                # Batting Team Curve
+                # Batting curve
                 rr1 += np.random.uniform(0.1, 0.6)
 
                 if i > 14:
@@ -358,7 +378,7 @@ if st.button("🏏 Predict Winner"):
 
                 batting_rr.append(round(rr1, 2))
 
-                # Bowling Team Curve
+                # Bowling curve
                 rr2 += np.random.uniform(0.1, 0.5)
 
                 if i > 14:
@@ -369,9 +389,7 @@ if st.button("🏏 Predict Winner"):
             batting_rr = np.array(batting_rr)
             bowling_rr = np.array(bowling_rr)
 
-            # =================================================
-            # SCALE RUN RATES
-            # =================================================
+            # Scale curves
             batting_rr = (
                 batting_rr /
                 batting_rr.max()
@@ -383,11 +401,11 @@ if st.button("🏏 Predict Winner"):
             ) * max(rrr, 1)
 
             # =================================================
-            # CREATE FIGURE
+            # CREATE GRAPH
             # =================================================
             fig = go.Figure()
 
-            # Batting Team Line
+            # Batting line
             fig.add_trace(
 
                 go.Scatter(
@@ -407,7 +425,7 @@ if st.button("🏏 Predict Winner"):
                 )
             )
 
-            # Bowling Team Line
+            # Bowling line
             fig.add_trace(
 
                 go.Scatter(
