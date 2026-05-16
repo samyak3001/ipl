@@ -417,7 +417,7 @@ if st.button("🏏 Predict Winner"):
         # =================================================
         with right_output:
 
-            st.markdown("## 🪱 IPL Run Rate Worm Graph")
+            st.markdown("## Comparison Graph")
 
             overs = list(range(1, 21))
 
@@ -494,7 +494,7 @@ if st.button("🏏 Predict Winner"):
 
                 template="plotly_dark",
 
-                title="🏏 IPL Run Rate Worm Graph",
+                title="🏏Run Rate Worm Graph",
 
                 xaxis_title="Overs",
 
