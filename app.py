@@ -2,15 +2,20 @@ import streamlit as st
 import pickle
 import pandas as pd
 import plotly.graph_objects as go
+import numpy as np
 
-# ---------------- Page Config ----------------
+# =========================================================
+# PAGE CONFIG
+# =========================================================
 st.set_page_config(
     page_title="IPL Win Predictor",
     page_icon="🏏",
     layout="wide"
 )
 
-# ---------------- Dark Theme CSS ----------------
+# =========================================================
+# DARK THEME CSS
+# =========================================================
 st.markdown("""
 <style>
 
@@ -56,11 +61,15 @@ label {
 </style>
 """, unsafe_allow_html=True)
 
-# ---------------- Load Model ----------------
+# =========================================================
+# LOAD MODEL
+# =========================================================
 with open("model.pkl", "rb") as f:
     model = pickle.load(f)
 
-# ---------------- Title ----------------
+# =========================================================
+# TITLE
+# =========================================================
 st.markdown(
     "<h1 style='text-align:center;'>🏏 IPL Win Predictor</h1>",
     unsafe_allow_html=True
@@ -68,7 +77,9 @@ st.markdown(
 
 st.markdown("---")
 
-# ---------------- Teams ----------------
+# =========================================================
+# TEAMS
+# =========================================================
 teams = [
     "Chennai Super Kings",
     "Mumbai Indians",
@@ -122,7 +133,9 @@ with right_input:
         value=5
     )
 
-    # ---------------- Fixed Over Selector ----------------
+    # =====================================================
+    # FIXED OVER SELECTOR
+    # =====================================================
     overs_left = st.selectbox(
         "Overs Left",
         [
@@ -232,16 +245,15 @@ if st.button("🏏 Predict Winner"):
         # =================================================
         # OUTPUT LAYOUT
         # =================================================
-        left_output, right_output = st.columns([1, 1.2])
+        left_output, right_output = st.columns([1, 1.5])
 
         # =================================================
-        # LEFT SIDE
+        # LEFT SIDE RESULTS
         # =================================================
         with left_output:
 
             st.markdown("## 🏆 Prediction Result")
 
-            # Dynamic Colors
             if batting_win > bowling_win:
 
                 st.success(
@@ -270,7 +282,9 @@ if st.button("🏏 Predict Winner"):
 
                 progress_value = bowling_win
 
-            # Progress Bar
+            # =================================================
+            # PROGRESS BAR
+            # =================================================
             st.progress(int(progress_value))
 
             st.markdown("### 📊 Match Stats")
@@ -291,52 +305,102 @@ if st.button("🏏 Predict Winner"):
             )
 
         # =================================================
-        # RIGHT SIDE 3D GRAPH
+        # RIGHT SIDE WORM GRAPH
         # =================================================
         with right_output:
 
-            st.markdown("## 📈 Win Probability Graph")
+            st.markdown("## 🪱 IPL Worm Graph")
 
-            fig = go.Figure(data=[
+            # ---------------- Overs ----------------
+            overs = list(range(1, 21))
 
-                go.Bar(
-                    x=[
-                        batting_team,
-                        bowling_team
-                    ],
+            # ---------------- Simulated Match Progress ----------------
+            batting_progress = np.linspace(
+                0,
+                current_score,
+                20
+            )
 
-                    y=[
-                        batting_win,
-                        bowling_win
-                    ],
+            target_progress = np.linspace(
+                0,
+                target,
+                20
+            )
 
-                    text=[
-                        f"{batting_win}%",
-                        f"{bowling_win}%"
-                    ],
+            # ---------------- Figure ----------------
+            fig = go.Figure()
 
-                    textposition='auto'
+            # ---------------- Batting Team Line ----------------
+            fig.add_trace(
+
+                go.Scatter(
+
+                    x=overs,
+
+                    y=batting_progress,
+
+                    mode='lines+markers',
+
+                    name=batting_team,
+
+                    line=dict(
+                        width=5,
+                        shape='spline'
+                    ),
+
+                    marker=dict(
+                        size=8
+                    )
                 )
+            )
 
-            ])
+            # ---------------- Bowling Team Line ----------------
+            fig.add_trace(
 
+                go.Scatter(
+
+                    x=overs,
+
+                    y=target_progress,
+
+                    mode='lines+markers',
+
+                    name=bowling_team,
+
+                    line=dict(
+                        width=5,
+                        shape='spline'
+                    ),
+
+                    marker=dict(
+                        size=8
+                    )
+                )
+            )
+
+            # ---------------- Layout ----------------
             fig.update_layout(
 
                 template="plotly_dark",
 
-                title="🏏 IPL Win Prediction",
+                title="🏏 IPL Worm Graph",
 
-                xaxis_title="Teams",
+                xaxis_title="Overs",
 
-                yaxis_title="Winning Probability (%)",
+                yaxis_title="Runs",
 
-                height=500,
+                height=550,
 
-                yaxis=dict(
-                    range=[0, 100]
+                hovermode="x unified",
+
+                legend_title="Teams",
+
+                xaxis=dict(
+                    tickmode='linear'
                 )
             )
 
+            # ---------------- Show Graph ----------------
             st.plotly_chart(
                 fig,
                 use_container_width=True
