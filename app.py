@@ -1,49 +1,58 @@
 import streamlit as st
 import pickle
 import pandas as pd
-import matplotlib.pyplot as plt
+import plotly.graph_objects as go
 
 # ---------------- Page Config ----------------
 st.set_page_config(
     page_title="IPL Win Predictor",
     page_icon="🏏",
-    layout="centered"
+    layout="wide"
 )
 
 # ---------------- Dark Theme CSS ----------------
 st.markdown("""
 <style>
+
 body {
     background-color: #0E1117;
 }
+
 .main {
     background-color: #0E1117;
 }
-h1 {
-    color: #FAFAFA;
+
+h1, h2, h3 {
+    color: white;
 }
-label, .stNumberInput label, .stSelectbox label {
-    color: #E5E7EB !important;
+
+label {
+    color: white !important;
 }
-.footer {
-    text-align: center;
-    font-size: 14px;
-    color: #9CA3AF;
-    margin-top: 30px;
-}
+
 .stButton>button {
+    width: 100%;
     background-color: #2563EB;
     color: white;
     border-radius: 10px;
     height: 50px;
-    font-size: 16px;
+    font-size: 18px;
     font-weight: bold;
     border: none;
 }
+
 .stButton>button:hover {
     background-color: #1D4ED8;
     color: white;
 }
+
+.footer {
+    text-align: center;
+    color: #9CA3AF;
+    font-size: 14px;
+    margin-top: 30px;
+}
+
 </style>
 """, unsafe_allow_html=True)
 
@@ -51,7 +60,7 @@ label, .stNumberInput label, .stSelectbox label {
 with open("model.pkl", "rb") as f:
     model = pickle.load(f)
 
-# ---------------- Header ----------------
+# ---------------- Title ----------------
 st.markdown(
     "<h1 style='text-align:center;'>🏏 IPL Win Predictor</h1>",
     unsafe_allow_html=True
@@ -73,10 +82,12 @@ teams = [
     "Lucknow Super Giants"
 ]
 
-# ---------------- Inputs ----------------
-col1, col2 = st.columns(2)
+# =========================================================
+# INPUT SECTION
+# =========================================================
+left_input, right_input = st.columns(2)
 
-with col1:
+with left_input:
 
     batting_team = st.selectbox(
         "🏏 Batting Team",
@@ -97,7 +108,7 @@ with col1:
         value=180
     )
 
-with col2:
+with right_input:
 
     bowling_team = st.selectbox(
         "🎯 Bowling Team",
@@ -111,7 +122,7 @@ with col2:
         value=5
     )
 
-    # ---------------- Fixed Over Input ----------------
+    # ---------------- Fixed Over Selector ----------------
     overs_left = st.selectbox(
         "Overs Left",
         [
@@ -122,33 +133,11 @@ with col2:
         index=50
     )
 
-# ---------------- Calculations ----------------
+# =========================================================
+# CALCULATIONS
+# =========================================================
 runs_left = target - current_score
 
-# ---------------- Validation ----------------
-st.markdown("---")
-
-if runs_left < 0:
-    st.success(f"🏆 {batting_team} already won the match!")
-    st.stop()
-
-if overs_left <= 0 and runs_left > 0:
-    st.error("❌ Match Over")
-    st.stop()
-
-# ---------------- Match Metrics ----------------
-col3, col4, col5 = st.columns(3)
-
-with col3:
-    st.metric("Runs Left", runs_left)
-
-with col4:
-    st.metric("Overs Left", overs_left)
-
-with col5:
-    st.metric("Wickets Left", wickets_left)
-
-# ---------------- Required Run Rate ----------------
 balls_left = (
     int(overs_left) * 6
     + int((overs_left - int(overs_left)) * 10)
@@ -159,12 +148,48 @@ if balls_left > 0:
 else:
     rrr = 0
 
-st.write(f"## Required Run Rate: {rrr}")
+# =========================================================
+# VALIDATIONS
+# =========================================================
+st.markdown("---")
+
+if runs_left < 0:
+    st.success(f"🏆 {batting_team} already won the match!")
+    st.stop()
+
+if overs_left <= 0 and runs_left > 0:
+    st.error("❌ Match Over")
+    st.stop()
+
+# =========================================================
+# MATCH METRICS
+# =========================================================
+metric1, metric2, metric3 = st.columns(3)
+
+with metric1:
+    st.metric("Runs Left", runs_left)
+
+with metric2:
+    st.metric("Overs Left", overs_left)
+
+with metric3:
+    st.metric("Wickets Left", wickets_left)
+
+st.markdown(
+    f"""
+    <h2 style='color:white;'>
+    Required Run Rate: {rrr}
+    </h2>
+    """,
+    unsafe_allow_html=True
+)
 
 st.markdown("---")
 
-# ---------------- Prediction ----------------
-if st.button("🏏 Predict Winner", use_container_width=True):
+# =========================================================
+# PREDICTION BUTTON
+# =========================================================
+if st.button("🏏 Predict Winner"):
 
     input_df = pd.DataFrame(
         [[
@@ -189,22 +214,34 @@ if st.button("🏏 Predict Winner", use_container_width=True):
 
     try:
 
-        # ---------------- Predict Probabilities ----------------
-        if hasattr(model, "predict_proba"):
+        # =================================================
+        # PREDICT PROBABILITY
+        # =================================================
+        probability = model.predict_proba(input_df)
 
-            probability = model.predict_proba(input_df)
+        batting_win = round(
+            probability[0][1] * 100,
+            2
+        )
 
-            batting_win = round(
-                probability[0][1] * 100,
-                2
-            )
+        bowling_win = round(
+            probability[0][0] * 100,
+            2
+        )
 
-            bowling_win = round(
-                probability[0][0] * 100,
-                2
-            )
+        # =================================================
+        # OUTPUT LAYOUT
+        # =================================================
+        left_output, right_output = st.columns([1, 1.2])
 
-            # ---------------- Dynamic Colors ----------------
+        # =================================================
+        # LEFT SIDE
+        # =================================================
+        with left_output:
+
+            st.markdown("## 🏆 Prediction Result")
+
+            # Dynamic Colors
             if batting_win > bowling_win:
 
                 st.success(
@@ -233,118 +270,85 @@ if st.button("🏏 Predict Winner", use_container_width=True):
 
                 progress_value = bowling_win
 
-            # ---------------- Progress Bar ----------------
+            # Progress Bar
             st.progress(int(progress_value))
 
-            st.markdown("### 🏆 Win Probability Comparison")
+            st.markdown("### 📊 Match Stats")
 
-            # ---------------- Probability Graph ----------------
-            fig1, ax1 = plt.subplots(figsize=(8, 5))
-
-            teams_graph = [batting_team, bowling_team]
-            probs = [batting_win, bowling_win]
-
-            bars = ax1.bar(
-                teams_graph,
-                probs
+            st.metric(
+                "Runs Left",
+                runs_left
             )
 
-            # Labels on bars
-            for bar in bars:
+            st.metric(
+                "Required Run Rate",
+                rrr
+            )
 
-                height = bar.get_height()
+            st.metric(
+                "Wickets Left",
+                wickets_left
+            )
 
-                ax1.text(
-                    bar.get_x() + bar.get_width()/2,
-                    height + 1,
-                    f'{height}%',
-                    ha='center',
-                    fontsize=10
+        # =================================================
+        # RIGHT SIDE 3D GRAPH
+        # =================================================
+        with right_output:
+
+            st.markdown("## 📈 3D Win Probability Graph")
+
+            fig = go.Figure(data=[
+
+                go.Bar(
+                    x=[
+                        batting_team,
+                        bowling_team
+                    ],
+
+                    y=[
+                        batting_win,
+                        bowling_win
+                    ],
+
+                    text=[
+                        f"{batting_win}%",
+                        f"{bowling_win}%"
+                    ],
+
+                    textposition='auto'
                 )
 
-            ax1.set_ylabel("Winning Probability (%)")
-            ax1.set_ylim(0, 100)
+            ])
 
-            ax1.set_title(
-                "Winning Probability Graph"
-            )
+            fig.update_layout(
 
-            ax1.grid(
-                axis='y',
-                linestyle='--',
-                alpha=0.4
-            )
+                template="plotly_dark",
 
-            st.pyplot(fig1)
+                title="🏏 IPL Win Prediction",
 
-            # ---------------- Score Comparison Graph ----------------
-            st.markdown("### 📊 Match Score Comparison")
+                xaxis_title="Teams",
 
-            score_data = pd.DataFrame({
-                "Category": [
-                    "Current Score",
-                    "Target",
-                    "Runs Left"
-                ],
-                "Score": [
-                    current_score,
-                    target,
-                    runs_left
-                ]
-            })
+                yaxis_title="Winning Probability (%)",
 
-            fig2, ax2 = plt.subplots(figsize=(8, 5))
+                height=500,
 
-            bars2 = ax2.bar(
-                score_data["Category"],
-                score_data["Score"]
-            )
-
-            # Value labels
-            for bar in bars2:
-
-                height = bar.get_height()
-
-                ax2.text(
-                    bar.get_x() + bar.get_width()/2,
-                    height + 1,
-                    f'{height}',
-                    ha='center',
-                    fontsize=10
+                yaxis=dict(
+                    range=[0, 100]
                 )
-
-            ax2.set_ylabel("Runs")
-
-            ax2.set_title(
-                "🏏 Score Comparison"
             )
 
-            ax2.grid(
-                axis='y',
-                linestyle='--',
-                alpha=0.4
-            )
-
-            st.pyplot(fig2)
-
-        else:
-
-            prediction = model.predict(input_df)[0]
-
-            winning_team = (
-                batting_team
-                if prediction == 1
-                else bowling_team
-            )
-
-            st.success(
-                f"🏆 Winning Team: {winning_team}"
+            st.plotly_chart(
+                fig,
+                use_container_width=True
             )
 
     except Exception as e:
+
         st.error(f"Prediction Error: {e}")
 
-# ---------------- Footer ----------------
+# =========================================================
+# FOOTER
+# =========================================================
 st.markdown(
     """
     <hr>
