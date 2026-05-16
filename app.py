@@ -200,7 +200,7 @@ st.markdown(
 st.markdown("---")
 
 # =========================================================
-# PREDICT BUTTON
+# PREDICTION BUTTON
 # =========================================================
 if st.button("🏏 Predict Winner"):
 
@@ -305,11 +305,11 @@ if st.button("🏏 Predict Winner"):
             )
 
         # =================================================
-        # RIGHT SIDE ADVANCED WORM GRAPH
+        # RIGHT SIDE WORM GRAPH
         # =================================================
         with right_output:
 
-            st.markdown("## 🪱 IPL Worm Graph")
+            st.markdown("## 🪱 IPL Run Rate Worm Graph")
 
             # =================================================
             # OVERS
@@ -327,7 +327,7 @@ if st.button("🏏 Predict Winner"):
 
             for i in range(20):
 
-                # Batting Team RR
+                # Batting Team Curve
                 rr1 += np.random.uniform(0.1, 0.6)
 
                 if i > 14:
@@ -335,7 +335,7 @@ if st.button("🏏 Predict Winner"):
 
                 batting_rr.append(round(rr1, 2))
 
-                # Bowling Team RR
+                # Bowling Team Curve
                 rr2 += np.random.uniform(0.1, 0.5)
 
                 if i > 14:
@@ -358,25 +358,6 @@ if st.button("🏏 Predict Winner"):
                 bowling_rr /
                 bowling_rr.max()
             ) * (target / 20 + 2)
-
-            # =================================================
-            # RANDOM WICKET POINTS
-            # =================================================
-            batting_wickets = sorted(
-                np.random.choice(
-                    range(2, 20),
-                    size=3,
-                    replace=False
-                )
-            )
-
-            bowling_wickets = sorted(
-                np.random.choice(
-                    range(2, 20),
-                    size=3,
-                    replace=False
-                )
-            )
 
             # =================================================
             # CREATE FIGURE
@@ -424,60 +405,6 @@ if st.button("🏏 Predict Winner"):
                         width=5,
                         shape='spline'
                     )
-                )
-            )
-
-            # =================================================
-            # WICKET MARKERS - BATTING TEAM
-            # =================================================
-            fig.add_trace(
-
-                go.Scatter(
-
-                    x=[overs[i] for i in batting_wickets],
-
-                    y=[batting_rr[i] for i in batting_wickets],
-
-                    mode='markers+text',
-
-                    text=["W"] * len(batting_wickets),
-
-                    textposition="middle center",
-
-                    marker=dict(
-                        size=22,
-                        symbol='circle',
-                        line=dict(width=2)
-                    ),
-
-                    showlegend=False
-                )
-            )
-
-            # =================================================
-            # WICKET MARKERS - BOWLING TEAM
-            # =================================================
-            fig.add_trace(
-
-                go.Scatter(
-
-                    x=[overs[i] for i in bowling_wickets],
-
-                    y=[bowling_rr[i] for i in bowling_wickets],
-
-                    mode='markers+text',
-
-                    text=["W"] * len(bowling_wickets),
-
-                    textposition="middle center",
-
-                    marker=dict(
-                        size=22,
-                        symbol='circle',
-                        line=dict(width=2)
-                    ),
-
-                    showlegend=False
                 )
             )
 
