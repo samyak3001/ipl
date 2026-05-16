@@ -295,7 +295,7 @@ if st.button("🏏 Predict Winner"):
         # =================================================
         with right_output:
 
-            st.markdown("## 📈 3D Win Probability Graph")
+            st.markdown("## 📈 Win Probability Graph")
 
             fig = go.Figure(data=[
 
