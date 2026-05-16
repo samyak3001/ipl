@@ -14,7 +14,7 @@ st.set_page_config(
 )
 
 # =========================================================
-# DARK THEME CSS
+# CUSTOM CSS
 # =========================================================
 st.markdown("""
 <style>
@@ -27,7 +27,7 @@ body {
     background-color: #0E1117;
 }
 
-h1, h2, h3 {
+h1,h2,h3,h4 {
     color: white;
 }
 
@@ -39,8 +39,8 @@ label {
     width: 100%;
     background-color: #2563EB;
     color: white;
-    border-radius: 10px;
-    height: 50px;
+    border-radius: 12px;
+    height: 52px;
     font-size: 18px;
     font-weight: bold;
     border: none;
@@ -71,7 +71,11 @@ with open("model.pkl", "rb") as f:
 # TITLE
 # =========================================================
 st.markdown(
-    "<h1 style='text-align:center;'>🏏 IPL Win Predictor</h1>",
+    """
+    <h1 style='text-align:center;'>
+    🏏 IPL Win Predictor
+    </h1>
+    """,
     unsafe_allow_html=True
 )
 
@@ -151,13 +155,13 @@ with right_input:
 # =========================================================
 runs_left = target - current_score
 
-# Balls Left
+# Balls left
 balls_left = (
     int(overs_left) * 6
     + int((overs_left - int(overs_left)) * 10)
 )
 
-# Overs Completed
+# Overs completed
 overs_completed = 20 - overs_left
 
 # Current Run Rate
@@ -188,29 +192,29 @@ if balls_left <= 0 and runs_left > 0:
 # =========================================================
 # MATCH METRICS
 # =========================================================
-metric1, metric2, metric3, metric4 = st.columns(4)
+m1, m2, m3, m4 = st.columns(4)
 
-with metric1:
+with m1:
     st.metric("Runs Left", runs_left)
 
-with metric2:
+with m2:
     st.metric("Balls Left", balls_left)
 
-with metric3:
+with m3:
     st.metric("Wickets Left", wickets_left)
 
-with metric4:
+with m4:
     st.metric("Required RR", rrr)
 
 st.markdown("---")
 
 # =========================================================
-# PREDICT BUTTON
+# PREDICTION
 # =========================================================
 if st.button("🏏 Predict Winner"):
 
     # =====================================================
-    # INPUT DATAFRAME
+    # MODEL INPUT
     # =====================================================
     input_df = pd.DataFrame(
         [[
@@ -242,85 +246,125 @@ if st.button("🏏 Predict Winner"):
     try:
 
         # =================================================
-        # MODEL PREDICTION
+        # MODEL PROBABILITY
         # =================================================
         probability = model.predict_proba(input_df)
 
-        batting_win = round(
-            probability[0][1] * 100,
-            2
-        )
-
-        bowling_win = round(
-            probability[0][0] * 100,
-            2
-        )
+        batting_win = float(probability[0][1] * 100)
+        bowling_win = float(probability[0][0] * 100)
 
         # =================================================
-        # REALISTIC LAST OVER FIXES
+        # REALISTIC CRICKET ENGINE
         # =================================================
 
-        # 1 run from 1+ ball
+        # Pressure factor
+        pressure = rrr - crr
+
+        # =================================================
+        # EASY CHASE
+        # =================================================
+        if runs_left <= balls_left:
+            batting_win += 20
+
+        # =================================================
+        # 1 RUN FROM LAST BALL
+        # =================================================
         if runs_left == 1 and balls_left >= 1:
+            batting_win = 98
 
-            batting_win = 97
-            bowling_win = 3
-
-        # 2 runs from 1 ball
+        # =================================================
+        # 2 RUNS FROM 1 BALL
+        # =================================================
         elif runs_left == 2 and balls_left == 1:
 
-            if wickets_left >= 3:
+            if wickets_left >= 5:
                 batting_win = 65
 
-            elif wickets_left == 2:
+            elif wickets_left >= 3:
                 batting_win = 55
 
             else:
-                batting_win = 42
+                batting_win = 40
 
-            bowling_win = 100 - batting_win
-
-        # Boundary needed from 1 ball
+        # =================================================
+        # BOUNDARY NEEDED FROM LAST BALL
+        # =================================================
         elif runs_left >= 4 and balls_left == 1:
 
             if wickets_left >= 5:
-                batting_win = 30
+                batting_win = 22
 
-            else:
+            elif wickets_left >= 3:
                 batting_win = 15
 
-            bowling_win = 100 - batting_win
+            else:
+                batting_win = 8
 
-        # Easy chase
-        elif runs_left <= balls_left:
+        # =================================================
+        # LAST OVER CHASE
+        # =================================================
+        elif balls_left <= 6:
 
-            batting_win = max(
-                batting_win,
-                80
-            )
+            batting_win += wickets_left * 2
 
-            bowling_win = 100 - batting_win
+            batting_win -= pressure * 2
 
-        # Tough chase
-        elif runs_left > balls_left * 2:
+        # =================================================
+        # MIDDLE OVERS
+        # =================================================
+        elif balls_left <= 36:
 
-            bowling_win = max(
-                bowling_win,
-                80
-            )
+            batting_win += wickets_left * 1.5
 
-            batting_win = 100 - bowling_win
+            batting_win -= pressure * 1.2
 
-        # Almost impossible chase
-        if wickets_left <= 1 and runs_left > 12:
+        # =================================================
+        # EARLY OVERS
+        # =================================================
+        else:
 
-            bowling_win = 95
-            batting_win = 5
+            batting_win += wickets_left
+
+            batting_win -= pressure
+
+        # =================================================
+        # HIGH REQUIRED RR PENALTY
+        # =================================================
+        if rrr >= 15:
+            batting_win -= 15
+
+        elif rrr >= 12:
+            batting_win -= 10
+
+        elif rrr >= 10:
+            batting_win -= 5
+
+        # =================================================
+        # LOW WICKETS PENALTY
+        # =================================================
+        if wickets_left == 1:
+            batting_win -= 12
+
+        elif wickets_left == 2:
+            batting_win -= 7
+
+        # =================================================
+        # LIMIT VALUES
+        # =================================================
+        batting_win = max(
+            1,
+            min(99, batting_win)
+        )
+
+        bowling_win = 100 - batting_win
+
+        batting_win = round(batting_win, 2)
+        bowling_win = round(bowling_win, 2)
 
         # =================================================
         # OUTPUT LAYOUT
         # =================================================
-        left_output, right_output = st.columns([1, 1.7])
+        left_output, right_output = st.columns([1, 1.6])
 
         # =================================================
         # LEFT SIDE RESULT
@@ -369,7 +413,7 @@ if st.button("🏏 Predict Winner"):
             st.metric("Balls Left", balls_left)
 
         # =================================================
-        # RIGHT SIDE WORM GRAPH
+        # RIGHT SIDE GRAPH
         # =================================================
         with right_output:
 
@@ -385,7 +429,6 @@ if st.button("🏏 Predict Winner"):
 
             for i in range(20):
 
-                # Batting curve
                 rr1 += np.random.uniform(0.1, 0.6)
 
                 if i > 14:
@@ -393,7 +436,6 @@ if st.button("🏏 Predict Winner"):
 
                 batting_rr.append(round(rr1, 2))
 
-                # Bowling curve
                 rr2 += np.random.uniform(0.1, 0.5)
 
                 if i > 14:
@@ -404,7 +446,6 @@ if st.button("🏏 Predict Winner"):
             batting_rr = np.array(batting_rr)
             bowling_rr = np.array(bowling_rr)
 
-            # Scale curves
             batting_rr = (
                 batting_rr /
                 batting_rr.max()
@@ -416,23 +457,16 @@ if st.button("🏏 Predict Winner"):
             ) * max(rrr, 1)
 
             # =================================================
-            # CREATE GRAPH
+            # GRAPH
             # =================================================
             fig = go.Figure()
 
-            # Batting line
             fig.add_trace(
-
                 go.Scatter(
-
                     x=overs,
-
                     y=batting_rr,
-
                     mode='lines',
-
                     name=batting_team,
-
                     line=dict(
                         width=5,
                         shape='spline'
@@ -440,19 +474,12 @@ if st.button("🏏 Predict Winner"):
                 )
             )
 
-            # Bowling line
             fig.add_trace(
-
                 go.Scatter(
-
                     x=overs,
-
                     y=bowling_rr,
-
                     mode='lines',
-
                     name=bowling_team,
-
                     line=dict(
                         width=5,
                         shape='spline'
@@ -461,7 +488,7 @@ if st.button("🏏 Predict Winner"):
             )
 
             # =================================================
-            # GRAPH LAYOUT
+            # LAYOUT
             # =================================================
             fig.update_layout(
 
@@ -484,16 +511,12 @@ if st.button("🏏 Predict Winner"):
                 )
             )
 
-            # =================================================
-            # SHOW GRAPH
-            # =================================================
             st.plotly_chart(
                 fig,
                 use_container_width=True
             )
 
     except Exception as e:
-
         st.error(f"Prediction Error: {e}")
 
 # =========================================================
