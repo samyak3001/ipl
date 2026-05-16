@@ -1,8 +1,7 @@
 import streamlit as st
 import pickle
 import pandas as pd
-import altair as alt
-import plotly.express as px
+import matplotlib.pyplot as plt
 
 # ---------------- Page Config ----------------
 st.set_page_config(
@@ -78,6 +77,7 @@ teams = [
 col1, col2 = st.columns(2)
 
 with col1:
+
     batting_team = st.selectbox(
         "🏏 Batting Team",
         teams
@@ -98,6 +98,7 @@ with col1:
     )
 
 with col2:
+
     bowling_team = st.selectbox(
         "🎯 Bowling Team",
         [team for team in teams if team != batting_team]
@@ -235,45 +236,96 @@ if st.button("🏏 Predict Winner", use_container_width=True):
             # ---------------- Progress Bar ----------------
             st.progress(int(progress_value))
 
-            # ---------------- Comparison Data ----------------
-            chart_data = pd.DataFrame({
-                "Team": [
-                    batting_team,
-                    bowling_team
+            st.markdown("### 🏆 Win Probability Comparison")
+
+            # ---------------- Probability Graph ----------------
+            fig1, ax1 = plt.subplots(figsize=(8, 5))
+
+            teams_graph = [batting_team, bowling_team]
+            probs = [batting_win, bowling_win]
+
+            bars = ax1.bar(
+                teams_graph,
+                probs
+            )
+
+            # Labels on bars
+            for bar in bars:
+
+                height = bar.get_height()
+
+                ax1.text(
+                    bar.get_x() + bar.get_width()/2,
+                    height + 1,
+                    f'{height}%',
+                    ha='center',
+                    fontsize=10
+                )
+
+            ax1.set_ylabel("Winning Probability (%)")
+            ax1.set_ylim(0, 100)
+
+            ax1.set_title(
+                "Winning Probability Graph"
+            )
+
+            ax1.grid(
+                axis='y',
+                linestyle='--',
+                alpha=0.4
+            )
+
+            st.pyplot(fig1)
+
+            # ---------------- Score Comparison Graph ----------------
+            st.markdown("### 📊 Match Score Comparison")
+
+            score_data = pd.DataFrame({
+                "Category": [
+                    "Current Score",
+                    "Target",
+                    "Runs Left"
                 ],
-                "Winning Chance": [
-                    batting_win,
-                    bowling_win
+                "Score": [
+                    current_score,
+                    target,
+                    runs_left
                 ]
             })
 
-            # ---------------- 3D Style Graph ----------------
-            fig = px.bar(
-                chart_data,
-                x="Team",
-                y="Winning Chance",
-                color="Team",
-                text="Winning Chance",
-                height=500
+            fig2, ax2 = plt.subplots(figsize=(8, 5))
+
+            bars2 = ax2.bar(
+                score_data["Category"],
+                score_data["Score"]
             )
 
-            fig.update_traces(
-                texttemplate='%{text:.2f}%',
-                textposition='outside'
+            # Value labels
+            for bar in bars2:
+
+                height = bar.get_height()
+
+                ax2.text(
+                    bar.get_x() + bar.get_width()/2,
+                    height + 1,
+                    f'{height}',
+                    ha='center',
+                    fontsize=10
+                )
+
+            ax2.set_ylabel("Runs")
+
+            ax2.set_title(
+                "🏏 Score Comparison"
             )
 
-            fig.update_layout(
-                title="🏆 Win Probability Comparison",
-                template="plotly_dark",
-                xaxis_title="Teams",
-                yaxis_title="Winning Probability (%)",
-                yaxis=dict(range=[0, 100])
+            ax2.grid(
+                axis='y',
+                linestyle='--',
+                alpha=0.4
             )
 
-            st.plotly_chart(
-                fig,
-                use_container_width=True
-            )
+            st.pyplot(fig2)
 
         else:
 
