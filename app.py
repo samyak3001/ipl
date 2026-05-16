@@ -155,13 +155,13 @@ with right_input:
 # =========================================================
 runs_left = target - current_score
 
-# Balls left
+# Balls Left
 balls_left = (
     int(overs_left) * 6
     + int((overs_left - int(overs_left)) * 10)
 )
 
-# Overs completed
+# Overs Completed
 overs_completed = 20 - overs_left
 
 # Current Run Rate
@@ -185,17 +185,13 @@ if batting_team == bowling_team:
     st.error("❌ Batting and Bowling teams cannot be same")
     st.stop()
 
-if runs_left <= 0:
-    st.success(f"🏆 {batting_team} already won the match!")
-    st.stop()
-
 # =========================================================
 # MATCH METRICS
 # =========================================================
 m1, m2, m3, m4 = st.columns(4)
 
 with m1:
-    st.metric("Runs Left", runs_left)
+    st.metric("Runs Left", max(runs_left, 0))
 
 with m2:
     st.metric("Balls Left", balls_left)
@@ -204,7 +200,7 @@ with m3:
     st.metric("Wickets Left", wickets_left)
 
 with m4:
-    st.metric("Required RR", rrr)
+    st.metric("Required RR", max(rrr, 0))
 
 st.markdown("---")
 
@@ -212,6 +208,48 @@ st.markdown("---")
 # PREDICT BUTTON
 # =========================================================
 if st.button("🏏 Predict Winner"):
+
+    # =====================================================
+    # MATCH RESULT CONDITIONS
+    # =====================================================
+
+    # Batting Team Won
+    if current_score >= target:
+
+        st.success(
+            f"🏆 {batting_team} WON THE MATCH!"
+        )
+
+        st.balloons()
+
+        st.info(
+            f"{batting_team} successfully chased "
+            f"{target}."
+        )
+
+        st.stop()
+
+    # Batting Team All Out
+    if wickets_left == 0 and current_score < target:
+
+        st.error(
+            f"❌ {batting_team} ALL OUT!"
+        )
+
+        st.success(
+            f"🏆 {bowling_team} WON THE MATCH!"
+        )
+
+        st.stop()
+
+    # Overs Finished
+    if balls_left <= 0 and current_score < target:
+
+        st.success(
+            f"🏆 {bowling_team} WON THE MATCH!"
+        )
+
+        st.stop()
 
     # =====================================================
     # INPUT DATAFRAME
@@ -246,121 +284,94 @@ if st.button("🏏 Predict Winner"):
     try:
 
         # =================================================
-        # MATCH FINISHED CONDITIONS
+        # MODEL PREDICTION
+        # =================================================
+        probability = model.predict_proba(input_df)
+
+        batting_win = float(probability[0][1] * 100)
+        bowling_win = float(probability[0][0] * 100)
+
+        # =================================================
+        # REALISTIC CRICKET ENGINE
         # =================================================
 
-        # Batting team won
-        if runs_left <= 0:
+        pressure = rrr - crr
 
-            batting_win = 100
-            bowling_win = 0
+        # Easy Chase
+        if runs_left <= balls_left:
+            batting_win += 20
 
-        # All out
-        elif wickets_left == 0 and runs_left > 0:
+        # 1 Run Needed
+        if runs_left == 1 and balls_left >= 1:
+            batting_win = 98
 
-            batting_win = 0
-            bowling_win = 100
+        # 2 Runs from 1 Ball
+        elif runs_left == 2 and balls_left == 1:
 
-        # No balls left
-        elif balls_left <= 0 and runs_left > 0:
+            if wickets_left >= 5:
+                batting_win = 65
 
-            batting_win = 0
-            bowling_win = 100
+            elif wickets_left >= 3:
+                batting_win = 55
 
+            else:
+                batting_win = 40
+
+        # Boundary Needed
+        elif runs_left >= 4 and balls_left == 1:
+
+            if wickets_left >= 5:
+                batting_win = 22
+
+            elif wickets_left >= 3:
+                batting_win = 15
+
+            else:
+                batting_win = 8
+
+        # Last Over
+        elif balls_left <= 6:
+
+            batting_win += wickets_left * 2
+            batting_win -= pressure * 2
+
+        # Middle Overs
+        elif balls_left <= 36:
+
+            batting_win += wickets_left * 1.5
+            batting_win -= pressure * 1.2
+
+        # Early Overs
         else:
 
-            # =================================================
-            # MODEL PREDICTION
-            # =================================================
-            probability = model.predict_proba(input_df)
+            batting_win += wickets_left
+            batting_win -= pressure
 
-            batting_win = float(probability[0][1] * 100)
-            bowling_win = float(probability[0][0] * 100)
+        # High RR Penalty
+        if rrr >= 15:
+            batting_win -= 15
 
-            # =================================================
-            # REALISTIC CRICKET ENGINE
-            # =================================================
+        elif rrr >= 12:
+            batting_win -= 10
 
-            pressure = rrr - crr
+        elif rrr >= 10:
+            batting_win -= 5
 
-            # Easy chase
-            if runs_left <= balls_left:
-                batting_win += 20
+        # Low Wickets Penalty
+        if wickets_left == 1:
+            batting_win -= 12
 
-            # 1 run needed
-            if runs_left == 1 and balls_left >= 1:
-                batting_win = 98
+        elif wickets_left == 2:
+            batting_win -= 7
 
-            # 2 needed from 1 ball
-            elif runs_left == 2 and balls_left == 1:
+        # Clamp Values
+        batting_win = max(
+            1,
+            min(99, batting_win)
+        )
 
-                if wickets_left >= 5:
-                    batting_win = 65
+        bowling_win = 100 - batting_win
 
-                elif wickets_left >= 3:
-                    batting_win = 55
-
-                else:
-                    batting_win = 40
-
-            # Boundary needed from last ball
-            elif runs_left >= 4 and balls_left == 1:
-
-                if wickets_left >= 5:
-                    batting_win = 22
-
-                elif wickets_left >= 3:
-                    batting_win = 15
-
-                else:
-                    batting_win = 8
-
-            # Last over
-            elif balls_left <= 6:
-
-                batting_win += wickets_left * 2
-                batting_win -= pressure * 2
-
-            # Middle overs
-            elif balls_left <= 36:
-
-                batting_win += wickets_left * 1.5
-                batting_win -= pressure * 1.2
-
-            # Early overs
-            else:
-
-                batting_win += wickets_left
-                batting_win -= pressure
-
-            # High RR penalty
-            if rrr >= 15:
-                batting_win -= 15
-
-            elif rrr >= 12:
-                batting_win -= 10
-
-            elif rrr >= 10:
-                batting_win -= 5
-
-            # Low wickets penalty
-            if wickets_left == 1:
-                batting_win -= 12
-
-            elif wickets_left == 2:
-                batting_win -= 7
-
-            # Clamp values
-            batting_win = max(
-                1,
-                min(99, batting_win)
-            )
-
-            bowling_win = 100 - batting_win
-
-        # =================================================
-        # ROUND VALUES
-        # =================================================
         batting_win = round(batting_win, 2)
         bowling_win = round(bowling_win, 2)
 
