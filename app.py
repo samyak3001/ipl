@@ -134,7 +134,7 @@ with right_input:
     )
 
     # =====================================================
-    # FIXED OVER SELECTOR
+    # FIXED CRICKET OVER SELECTOR
     # =====================================================
     overs_left = st.selectbox(
         "Overs Left",
@@ -245,7 +245,7 @@ if st.button("🏏 Predict Winner"):
         # =================================================
         # OUTPUT LAYOUT
         # =================================================
-        left_output, right_output = st.columns([1, 1.5])
+        left_output, right_output = st.columns([1, 1.6])
 
         # =================================================
         # LEFT SIDE RESULTS
@@ -305,32 +305,93 @@ if st.button("🏏 Predict Winner"):
             )
 
         # =================================================
-        # RIGHT SIDE WORM GRAPH
+        # RIGHT SIDE REALISTIC WORM GRAPH
         # =================================================
         with right_output:
 
-            st.markdown("## Comparison Graph")
+            st.markdown("## 🪱 IPL Worm Graph")
 
-            # ---------------- Overs ----------------
+            # =================================================
+            # OVERS
+            # =================================================
             overs = list(range(1, 21))
 
-            # ---------------- Simulated Match Progress ----------------
-            batting_progress = np.linspace(
-                0,
-                current_score,
-                20
+            # =================================================
+            # REALISTIC BATTING PROGRESSION
+            # =================================================
+            batting_progress = []
+
+            score = 0
+
+            for i in range(20):
+
+                # Powerplay
+                if i < 6:
+                    score += np.random.randint(6, 12)
+
+                # Middle overs
+                elif i < 15:
+                    score += np.random.randint(4, 10)
+
+                # Death overs
+                else:
+                    score += np.random.randint(8, 16)
+
+                batting_progress.append(score)
+
+            # Scale to current score
+            scale_factor = (
+                current_score /
+                batting_progress[-1]
             )
 
-            target_progress = np.linspace(
-                0,
-                target,
-                20
+            batting_progress = [
+                round(x * scale_factor, 1)
+                for x in batting_progress
+            ]
+
+            # =================================================
+            # REALISTIC TARGET PROGRESSION
+            # =================================================
+            target_progress = []
+
+            target_score = 0
+
+            for i in range(20):
+
+                # Powerplay
+                if i < 6:
+                    target_score += np.random.randint(7, 11)
+
+                # Middle overs
+                elif i < 15:
+                    target_score += np.random.randint(5, 9)
+
+                # Death overs
+                else:
+                    target_score += np.random.randint(9, 15)
+
+                target_progress.append(target_score)
+
+            # Scale to target
+            target_scale = (
+                target /
+                target_progress[-1]
             )
 
-            # ---------------- Figure ----------------
+            target_progress = [
+                round(x * target_scale, 1)
+                for x in target_progress
+            ]
+
+            # =================================================
+            # CREATE FIGURE
+            # =================================================
             fig = go.Figure()
 
-            # ---------------- Batting Team Line ----------------
+            # =================================================
+            # BATTING TEAM LINE
+            # =================================================
             fig.add_trace(
 
                 go.Scatter(
@@ -354,7 +415,9 @@ if st.button("🏏 Predict Winner"):
                 )
             )
 
-            # ---------------- Bowling Team Line ----------------
+            # =================================================
+            # TARGET LINE
+            # =================================================
             fig.add_trace(
 
                 go.Scatter(
@@ -378,7 +441,9 @@ if st.button("🏏 Predict Winner"):
                 )
             )
 
-            # ---------------- Layout ----------------
+            # =================================================
+            # GRAPH LAYOUT
+            # =================================================
             fig.update_layout(
 
                 template="plotly_dark",
@@ -400,7 +465,9 @@ if st.button("🏏 Predict Winner"):
                 )
             )
 
-            # ---------------- Show Graph ----------------
+            # =================================================
+            # SHOW GRAPH
+            # =================================================
             st.plotly_chart(
                 fig,
                 use_container_width=True
