@@ -256,52 +256,68 @@ if st.button("🏏 Predict Winner"):
             2
         )
 
-        # =================================================
-        # LAST OVER REALISTIC FIXES
-        # =================================================
+       # =================================================
+# REALISTIC LAST OVER FIXES
+# =================================================
 
-        # Easy chase situations
-        if runs_left <= balls_left:
+# 1 run from 1+ ball
+if runs_left == 1 and balls_left >= 1:
 
-            batting_win = max(
-                batting_win,
-                85
-            )
+    batting_win = 97
+    bowling_win = 3
 
-            bowling_win = 100 - batting_win
+# 2 runs from 1 ball
+elif runs_left == 2 and balls_left == 1:
 
-        # Very easy finish
-        if runs_left == 1 and balls_left >= 1:
+    if wickets_left >= 3:
+        batting_win = 65
+    elif wickets_left == 2:
+        batting_win = 55
+    else:
+        batting_win = 42
 
-            batting_win = 97
-            bowling_win = 3
+    bowling_win = 100 - batting_win
 
-        # Need boundary
-        elif runs_left <= 6 and balls_left >= 2:
+# Boundary needed from 1 ball
+elif runs_left >= 4 and balls_left == 1:
 
-            batting_win = max(
-                batting_win,
-                75
-            )
+    if wickets_left >= 5:
+        batting_win = 30
+    else:
+        batting_win = 15
 
-            bowling_win = 100 - batting_win
+    bowling_win = 100 - batting_win
 
-        # Tough chase
-        elif runs_left > balls_left * 2:
+# Easy chase
+elif runs_left <= balls_left:
 
-            bowling_win = max(
-                bowling_win,
-                80
-            )
+    batting_win = max(
+        batting_win,
+        80
+    )
 
-            batting_win = 100 - bowling_win
+    bowling_win = 100 - batting_win
 
-        # Almost impossible chase
-        if wickets_left <= 1 and runs_left > 12:
+# Tough chase
+elif runs_left > balls_left * 2:
 
-            bowling_win = 95
-            batting_win = 5
+    bowling_win = max(
+        bowling_win,
+        80
+    )
 
+    batting_win = 100 - bowling_win
+
+# Almost impossible
+if wickets_left <= 1 and runs_left > 12:
+
+    bowling_win = 95
+    batting_win = 5
+
+       
+           
+
+        
         # =================================================
         # OUTPUT LAYOUT
         # =================================================
