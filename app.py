@@ -200,7 +200,7 @@ st.markdown(
 st.markdown("---")
 
 # =========================================================
-# PREDICTION BUTTON
+# PREDICT BUTTON
 # =========================================================
 if st.button("🏏 Predict Winner"):
 
@@ -245,7 +245,7 @@ if st.button("🏏 Predict Winner"):
         # =================================================
         # OUTPUT LAYOUT
         # =================================================
-        left_output, right_output = st.columns([1, 1.6])
+        left_output, right_output = st.columns([1, 1.7])
 
         # =================================================
         # LEFT SIDE RESULTS
@@ -305,11 +305,11 @@ if st.button("🏏 Predict Winner"):
             )
 
         # =================================================
-        # RIGHT SIDE REALISTIC WORM GRAPH
+        # RIGHT SIDE ADVANCED WORM GRAPH
         # =================================================
         with right_output:
 
-            st.markdown("## Comparison Graph")
+            st.markdown("## 🪱 IPL Worm Graph")
 
             # =================================================
             # OVERS
@@ -317,72 +317,66 @@ if st.button("🏏 Predict Winner"):
             overs = list(range(1, 21))
 
             # =================================================
-            # REALISTIC BATTING PROGRESSION
+            # REALISTIC RUN RATE CURVES
             # =================================================
-            batting_progress = []
+            batting_rr = []
+            bowling_rr = []
 
-            score = 0
+            rr1 = 0
+            rr2 = 0
 
             for i in range(20):
 
-                # Powerplay
-                if i < 6:
-                    score += np.random.randint(6, 12)
+                # Batting Team RR
+                rr1 += np.random.uniform(0.1, 0.6)
 
-                # Middle overs
-                elif i < 15:
-                    score += np.random.randint(4, 10)
+                if i > 14:
+                    rr1 += np.random.uniform(0.2, 0.7)
 
-                # Death overs
-                else:
-                    score += np.random.randint(8, 16)
+                batting_rr.append(round(rr1, 2))
 
-                batting_progress.append(score)
+                # Bowling Team RR
+                rr2 += np.random.uniform(0.1, 0.5)
 
-            # Scale to current score
-            scale_factor = (
-                current_score /
-                batting_progress[-1]
-            )
+                if i > 14:
+                    rr2 += np.random.uniform(0.1, 0.6)
 
-            batting_progress = [
-                round(x * scale_factor, 1)
-                for x in batting_progress
-            ]
+                bowling_rr.append(round(rr2, 2))
 
             # =================================================
-            # REALISTIC TARGET PROGRESSION
+            # SCALE REALISTICALLY
             # =================================================
-            target_progress = []
+            batting_rr = np.array(batting_rr)
+            bowling_rr = np.array(bowling_rr)
 
-            target_score = 0
+            batting_rr = (
+                batting_rr /
+                batting_rr.max()
+            ) * (current_score / 20 + 2)
 
-            for i in range(20):
+            bowling_rr = (
+                bowling_rr /
+                bowling_rr.max()
+            ) * (target / 20 + 2)
 
-                # Powerplay
-                if i < 6:
-                    target_score += np.random.randint(7, 11)
-
-                # Middle overs
-                elif i < 15:
-                    target_score += np.random.randint(5, 9)
-
-                # Death overs
-                else:
-                    target_score += np.random.randint(9, 15)
-
-                target_progress.append(target_score)
-
-            # Scale to target
-            target_scale = (
-                target /
-                target_progress[-1]
+            # =================================================
+            # RANDOM WICKET POINTS
+            # =================================================
+            batting_wickets = sorted(
+                np.random.choice(
+                    range(2, 20),
+                    size=3,
+                    replace=False
+                )
             )
 
-            target_progress = [
-                round(x * target_scale, 1)
-                for x in target_progress
-            ]
+            bowling_wickets = sorted(
+                np.random.choice(
+                    range(2, 20),
+                    size=3,
+                    replace=False
+                )
+            )
 
             # =================================================
             # CREATE FIGURE
@@ -398,25 +392,21 @@ if st.button("🏏 Predict Winner"):
 
                     x=overs,
 
-                    y=batting_progress,
+                    y=batting_rr,
 
-                    mode='lines+markers',
+                    mode='lines',
 
                     name=batting_team,
 
                     line=dict(
                         width=5,
                         shape='spline'
-                    ),
-
-                    marker=dict(
-                        size=8
                     )
                 )
             )
 
             # =================================================
-            # TARGET LINE
+            # BOWLING TEAM LINE
             # =================================================
             fig.add_trace(
 
@@ -424,20 +414,70 @@ if st.button("🏏 Predict Winner"):
 
                     x=overs,
 
-                    y=target_progress,
+                    y=bowling_rr,
 
-                    mode='lines+markers',
+                    mode='lines',
 
                     name=bowling_team,
 
                     line=dict(
                         width=5,
                         shape='spline'
-                    ),
+                    )
+                )
+            )
+
+            # =================================================
+            # WICKET MARKERS - BATTING TEAM
+            # =================================================
+            fig.add_trace(
+
+                go.Scatter(
+
+                    x=[overs[i] for i in batting_wickets],
+
+                    y=[batting_rr[i] for i in batting_wickets],
+
+                    mode='markers+text',
+
+                    text=["W"] * len(batting_wickets),
+
+                    textposition="middle center",
 
                     marker=dict(
-                        size=8
-                    )
+                        size=22,
+                        symbol='circle',
+                        line=dict(width=2)
+                    ),
+
+                    showlegend=False
+                )
+            )
+
+            # =================================================
+            # WICKET MARKERS - BOWLING TEAM
+            # =================================================
+            fig.add_trace(
+
+                go.Scatter(
+
+                    x=[overs[i] for i in bowling_wickets],
+
+                    y=[bowling_rr[i] for i in bowling_wickets],
+
+                    mode='markers+text',
+
+                    text=["W"] * len(bowling_wickets),
+
+                    textposition="middle center",
+
+                    marker=dict(
+                        size=22,
+                        symbol='circle',
+                        line=dict(width=2)
+                    ),
+
+                    showlegend=False
                 )
             )
 
@@ -448,13 +488,13 @@ if st.button("🏏 Predict Winner"):
 
                 template="plotly_dark",
 
-                title="🏏Score Graph",
+                title="🏏 IPL Run Rate Worm Graph",
 
                 xaxis_title="Overs",
 
-                yaxis_title="Runs",
+                yaxis_title="Run Rate",
 
-                height=550,
+                height=600,
 
                 hovermode="x unified",
 
