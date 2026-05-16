@@ -213,29 +213,31 @@ if st.button("🏏 Predict Winner"):
     # MODEL INPUT DATAFRAME
     # =====================================================
     input_df = pd.DataFrame(
-        [[
-            batting_team,
-            bowling_team,
-            target,
-            current_score,
-            runs_left,
-            balls_left,
-            wickets_left,
-            crr,
-            rrr
-        ]],
-        columns=[
-            "batting_team",
-            "bowling_team",
-            "target",
-            "current_score",
-            "runs_left",
-            "balls_left",
-            "wickets_left",
-            "crr",
-            "rrr"
-        ]
-    )
+    [[
+        batting_team,
+        bowling_team,
+        target,
+        current_score,
+        runs_left,
+        wickets_left,
+        overs_left,
+        balls_left,
+        crr,
+        rrr
+    ]],
+    columns=[
+        "batting_team",
+        "bowling_team",
+        "target",
+        "current_score",
+        "runs_left",
+        "wickets_left",
+        "overs_left",
+        "balls_left",
+        "crr",
+        "rrr"
+    ]
+)
 
     try:
 
