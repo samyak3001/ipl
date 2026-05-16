@@ -137,9 +137,7 @@ with right_input:
         value=5
     )
 
-    # =====================================================
     # VALID CRICKET OVERS
-    # =====================================================
     overs_left = st.selectbox(
         "Overs Left",
         [
@@ -155,13 +153,11 @@ with right_input:
 # =========================================================
 runs_left = target - current_score
 
-# Balls Left
 balls_left = (
     int(overs_left) * 6
     + int((overs_left - int(overs_left)) * 10)
 )
 
-# Overs Completed
 overs_completed = 20 - overs_left
 
 # Current Run Rate
@@ -213,7 +209,7 @@ if st.button("🏏 Predict Winner"):
     # MATCH RESULT CONDITIONS
     # =====================================================
 
-    # Batting Team Won
+    # Batting team won
     if current_score >= target:
 
         st.success(
@@ -229,7 +225,7 @@ if st.button("🏏 Predict Winner"):
 
         st.stop()
 
-    # Batting Team All Out
+    # All out
     if wickets_left == 0 and current_score < target:
 
         st.error(
@@ -242,7 +238,7 @@ if st.button("🏏 Predict Winner"):
 
         st.stop()
 
-    # Overs Finished
+    # Overs completed
     if balls_left <= 0 and current_score < target:
 
         st.success(
@@ -262,10 +258,7 @@ if st.button("🏏 Predict Winner"):
             current_score,
             runs_left,
             wickets_left,
-            overs_left,
-            balls_left,
-            crr,
-            rrr
+            overs_left
         ]],
         columns=[
             "batting_team",
@@ -274,10 +267,7 @@ if st.button("🏏 Predict Winner"):
             "current_score",
             "runs_left",
             "wickets_left",
-            "overs_left",
-            "balls_left",
-            "crr",
-            "rrr"
+            "overs_left"
         ]
     )
 
@@ -297,74 +287,108 @@ if st.button("🏏 Predict Winner"):
 
         pressure = rrr - crr
 
-        # Easy Chase
-        if runs_left <= balls_left:
-            batting_win += 20
+        # -------------------------------------------------
+        # WICKETS FACTOR
+        # -------------------------------------------------
+        if wickets_left >= 8:
+            batting_win += 8
 
-        # 1 Run Needed
-        if runs_left == 1 and balls_left >= 1:
-            batting_win = 98
+        elif wickets_left >= 6:
+            batting_win += 5
 
-        # 2 Runs from 1 Ball
-        elif runs_left == 2 and balls_left == 1:
+        elif wickets_left >= 4:
+            batting_win += 2
 
-            if wickets_left >= 5:
-                batting_win = 65
-
-            elif wickets_left >= 3:
-                batting_win = 55
-
-            else:
-                batting_win = 40
-
-        # Boundary Needed
-        elif runs_left >= 4 and balls_left == 1:
-
-            if wickets_left >= 5:
-                batting_win = 22
-
-            elif wickets_left >= 3:
-                batting_win = 15
-
-            else:
-                batting_win = 8
-
-        # Last Over
-        elif balls_left <= 6:
-
-            batting_win += wickets_left * 2
-            batting_win -= pressure * 2
-
-        # Middle Overs
-        elif balls_left <= 36:
-
-            batting_win += wickets_left * 1.5
-            batting_win -= pressure * 1.2
-
-        # Early Overs
-        else:
-
-            batting_win += wickets_left
-            batting_win -= pressure
-
-        # High RR Penalty
-        if rrr >= 15:
-            batting_win -= 15
-
-        elif rrr >= 12:
-            batting_win -= 10
-
-        elif rrr >= 10:
-            batting_win -= 5
-
-        # Low Wickets Penalty
-        if wickets_left == 1:
-            batting_win -= 12
+        elif wickets_left == 3:
+            batting_win -= 3
 
         elif wickets_left == 2:
-            batting_win -= 7
+            batting_win -= 8
 
-        # Clamp Values
+        elif wickets_left == 1:
+            batting_win -= 18
+
+        # -------------------------------------------------
+        # REQUIRED RUN RATE FACTOR
+        # -------------------------------------------------
+        if rrr <= 6:
+            batting_win += 10
+
+        elif rrr <= 8:
+            batting_win += 5
+
+        elif rrr <= 10:
+            batting_win += 0
+
+        elif rrr <= 12:
+            batting_win -= 8
+
+        elif rrr <= 15:
+            batting_win -= 15
+
+        else:
+            batting_win -= 25
+
+        # -------------------------------------------------
+        # PRESSURE FACTOR
+        # -------------------------------------------------
+        batting_win -= pressure * 1.5
+
+        # -------------------------------------------------
+        # LAST OVER LOGIC
+        # -------------------------------------------------
+        if balls_left <= 6:
+
+            # Easy finish
+            if runs_left <= 6:
+
+                batting_win += 15
+
+            # Tough finish
+            elif runs_left >= 12:
+
+                batting_win -= 20
+
+        # -------------------------------------------------
+        # LAST BALL SPECIAL CASES
+        # -------------------------------------------------
+        if balls_left == 1:
+
+            # 1 needed
+            if runs_left == 1:
+                batting_win = 96
+
+            # 2 needed
+            elif runs_left == 2:
+
+                if wickets_left >= 5:
+                    batting_win = 68
+
+                elif wickets_left >= 3:
+                    batting_win = 60
+
+                else:
+                    batting_win = 45
+
+            # Boundary needed
+            elif runs_left >= 4:
+                batting_win -= 20
+
+        # -------------------------------------------------
+        # EASY CHASE BONUS
+        # -------------------------------------------------
+        if runs_left <= balls_left:
+            batting_win += 8
+
+        # -------------------------------------------------
+        # IMPOSSIBLE CHASE
+        # -------------------------------------------------
+        if rrr >= 20 and balls_left <= 12:
+            batting_win -= 35
+
+        # -------------------------------------------------
+        # CLAMP VALUES
+        # -------------------------------------------------
         batting_win = max(
             1,
             min(99, batting_win)
@@ -415,9 +439,6 @@ if st.button("🏏 Predict Winner"):
 
                 progress_value = bowling_win
 
-            # =================================================
-            # PROGRESS BAR
-            # =================================================
             st.progress(int(progress_value))
 
             st.markdown("### 📊 Match Stats")
@@ -470,9 +491,7 @@ if st.button("🏏 Predict Winner"):
                 bowling_rr.max()
             ) * max(rrr, 1)
 
-            # =================================================
             # GRAPH
-            # =================================================
             fig = go.Figure()
 
             fig.add_trace(
@@ -501,9 +520,7 @@ if st.button("🏏 Predict Winner"):
                 )
             )
 
-            # =================================================
             # LAYOUT
-            # =================================================
             fig.update_layout(
 
                 template="plotly_dark",
